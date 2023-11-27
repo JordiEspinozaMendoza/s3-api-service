@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import os
 import io
 import sys
@@ -8,20 +9,26 @@ import boto3
 load_dotenv()
 
 app = Flask(__name__)
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-@app.route("/notify/v1/health")
+
+@app.route("/api/notify/v1/health")
 def health_check():
     return jsonify({"status": "UP"})
-    
+
 @app.route("/api/image/", methods=["POST"])
 def upload_image():
     try:
-        image = request.files["file"].read()
-        return jsonify(
-            {
-                "status": "success",
-            }
-        )
+        file = request.files["file"]
+        image = file.read()
+        filename = file.filename
+        
+        s3_resource = boto3.resource("s3")
+        bucket = s3_resource.Bucket(os.environ.get("BUCKET_NAME"))
+        bucket.Object(filename).put(Body=file)
+
+        return jsonify({'message': 'File uploaded successfully'})
+        
     except Exception as e:
         error = str(e)
 
@@ -33,5 +40,4 @@ def upload_image():
 
     
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

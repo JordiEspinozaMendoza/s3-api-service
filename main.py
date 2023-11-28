@@ -42,18 +42,13 @@ def upload_image():
         filename = file.filename
         _id = uuid.uuid4().hex
 
-        cur = get_db_connection().cursor()
+        conn = get_db_connection()
+        cur = conn.cursor()
 
         s3_resource = boto3.resource("s3")
         bucket = s3_resource.Bucket(os.environ.get("BUCKET_NAME"))
         response = bucket.Object(filename).put(
             Body=file, Metadata={"socketId": socketId}
-        )
-
-        # Create table images if not exists
-        cur.execute("DROP TABLE IF EXISTS images;")
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS images (id varchar PRIMARY KEY, filename varchar, socketId varchar, url varchar);"
         )
 
         # Insert image into table
@@ -63,10 +58,11 @@ def upload_image():
         )
 
         # Commit changes
-        get_db_connection().commit()
+        conn.commit()
 
         # Close connection
         cur.close()
+        conn.close()
 
         return jsonify({"message": "File uploaded successfully"})
 
@@ -81,12 +77,14 @@ def upload_image():
 @app.route("/api/image/", methods=["GET"])
 def get_images():
     try:
-        cur = get_db_connection().cursor()
+        conn = get_db_connection()
+        cur = conn.cursor()
 
         cur.execute("SELECT * FROM images;")
         images = cur.fetchall()
 
         cur.close()
+        conn.close()
 
         return jsonify({"images": images})
 

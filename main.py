@@ -40,7 +40,7 @@ def upload_image():
         socketId = request.form.get("socketId")
         image = file.read()
         filename = file.filename
-        _id = uuid.uuid1()
+        _id = uuid.uuid4().hex
 
         cur = get_db_connection().cursor()
 
@@ -51,8 +51,9 @@ def upload_image():
         )
 
         # Create table images if not exists
+        cur.execute("DROP TABLE IF EXISTS images;")
         cur.execute(
-            "CREATE TABLE IF NOT EXISTS images (id uuid, filename varchar, socketId varchar, url varchar);"
+            "CREATE TABLE IF NOT EXISTS images (id varchar PRIMARY KEY, filename varchar, socketId varchar, url varchar);"
         )
 
         # Insert image into table
@@ -68,6 +69,26 @@ def upload_image():
         cur.close()
 
         return jsonify({"message": "File uploaded successfully"})
+
+    except Exception as e:
+        error = str(e)
+
+        print(e, sys.exc_info()[-1].tb_lineno)
+
+        return jsonify({"error": error, "status": "error"})
+
+
+@app.route("/api/image/", methods=["GET"])
+def get_images():
+    try:
+        cur = get_db_connection().cursor()
+
+        cur.execute("SELECT * FROM images;")
+        images = cur.fetchall()
+
+        cur.close()
+
+        return jsonify({"images": images})
 
     except Exception as e:
         error = str(e)

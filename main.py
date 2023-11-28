@@ -6,7 +6,9 @@ import io
 import sys
 from dotenv import load_dotenv
 import boto3
+import psycopg2
 import json
+import uuid 
 
 load_dotenv()
 
@@ -14,6 +16,11 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+def get_db_connection():
+    conn = psycopg2.connect(host=os.environ.get('DB_HOST'), database=os.environ.get('DB_DATABASE'), user=os.environ.get('DB_USERNAME'), password=os.environ.get('DB_PASSWORD'))
+    
+    return conn
+    
 @app.route("/api/notify/v1/health")
 def health_check():
     return jsonify({"status": "UP"})
@@ -25,6 +32,9 @@ def upload_image():
         socketId = request.form.get("socketId")
         image = file.read()
         filename = file.filename
+        _id = uuid.uuid1()
+        
+        cur = get_db_connection().cursor()
         
         s3_resource = boto3.resource("s3")
         bucket = s3_resource.Bucket(os.environ.get("BUCKET_NAME"))

@@ -86,6 +86,16 @@ def get_images():
         cur.close()
         conn.close()
 
+        images = [
+            {
+                "id": image[0],
+                "filename": image[1],
+                "socketId": image[2],
+                "url": image[3],
+            }
+            for image in images
+        ]
+
         return jsonify({"images": images})
 
     except Exception as e:

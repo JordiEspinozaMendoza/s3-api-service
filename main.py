@@ -42,18 +42,22 @@ def upload_image():
         image = file.read()
         filename = file.filename
         filename = file_generate_name(filename)
-        
+
         _id = uuid.uuid4().hex
 
         s3 = boto3.client("s3")
 
         response = s3.upload_fileobj(
-            file,
+            image,
             os.getenv("BUCKET_NAME"),
             filename,
+            ExtraArgs={
+                "ACL": "public-read",
+                "ContentType": file.content_type,
+                "Metadata": {"socketId": socketId},
+            },
         )
-        
-        
+
         conn = get_db_connection()
         cur = conn.cursor()
 

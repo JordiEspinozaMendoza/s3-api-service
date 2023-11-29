@@ -9,6 +9,7 @@ import boto3
 import psycopg2
 import json
 import uuid
+from utils import file_generate_name
 
 load_dotenv()
 
@@ -40,16 +41,21 @@ def upload_image():
         socketId = request.form.get("socketId")
         image = file.read()
         filename = file.filename
+        filename = file_generate_name(filename)
+        
         _id = uuid.uuid4().hex
 
+        s3 = boto3.client("s3")
+
+        response = s3.upload_fileobj(
+            file,
+            os.getenv("BUCKET_NAME"),
+            filename,
+        )
+        
+        
         conn = get_db_connection()
         cur = conn.cursor()
-
-        s3_resource = boto3.resource("s3")
-        bucket = s3_resource.Bucket(os.environ.get("BUCKET_NAME"))
-        response = bucket.Object(filename).put(
-            Body=file, Metadata={"socketId": socketId}
-        )
 
         cur.execute(
             "INSERT INTO images (id, filename, socketId) VALUES (%s, %s, %s)",

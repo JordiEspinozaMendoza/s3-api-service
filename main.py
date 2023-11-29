@@ -51,7 +51,6 @@ def upload_image():
             Body=file, Metadata={"socketId": socketId}
         )
 
-        # Insert image into table
         cur.execute(
             "INSERT INTO images (id, filename, socketId) VALUES (%s, %s, %s)",
             (_id, filename, socketId),
@@ -110,12 +109,13 @@ def get_images():
 def uploadedImage():
     object_key = request.json["object_key"]
     s3_resource = boto3.client("s3")
-
+    bucket = os.environ.get("BUCKET_NAME")
     response = s3_resource.get_object(
-        Bucket=os.environ.get("BUCKET_NAME"), Key=object_key
+        Bucket=bucket, Key=object_key
     )
     ResponseMetadata = response["ResponseMetadata"]
-
+    url = f'https://{bucket}.s3.amazonaws.com/{object_key}'
+    
     socketId = ResponseMetadata.get("HTTPHeaders").get("x-amz-meta-socketid")
     socketio.emit(
         "image_uploaded",

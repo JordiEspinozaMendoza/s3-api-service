@@ -110,12 +110,23 @@ def uploadedImage():
     object_key = request.json["object_key"]
     s3_resource = boto3.client("s3")
     bucket = os.environ.get("BUCKET_NAME")
-    response = s3_resource.get_object(
-        Bucket=bucket, Key=object_key
-    )
+    response = s3_resource.get_object(Bucket=bucket, Key=object_key)
     ResponseMetadata = response["ResponseMetadata"]
-    url = f'https://{bucket}.s3.amazonaws.com/{object_key}'
-    
+    url = f"https://{bucket}.s3.amazonaws.com/{object_key}"
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        "UPDATE images SET url = %s WHERE filename = %s",
+        (url, object_key),
+    )
+
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
     socketId = ResponseMetadata.get("HTTPHeaders").get("x-amz-meta-socketid")
     socketio.emit(
         "image_uploaded",

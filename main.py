@@ -48,11 +48,10 @@ def upload_image():
         s3 = boto3.client("s3")
 
         response = s3.upload_fileobj(
-            image,
+            io.BytesIO(image),
             os.getenv("BUCKET_NAME"),
             filename,
             ExtraArgs={
-                "ACL": "public-read",
                 "ContentType": file.content_type,
                 "Metadata": {"socketId": socketId},
             },
@@ -126,7 +125,7 @@ def uploadedImage():
 
     conn = get_db_connection()
     cur = conn.cursor()
-
+    
     cur.execute(
         "UPDATE images SET url = %s WHERE filename = %s",
         (url, object_key),

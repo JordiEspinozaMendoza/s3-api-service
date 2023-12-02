@@ -46,7 +46,7 @@ def upload_image():
         _id = uuid.uuid4().hex
 
         s3 = boto3.client("s3")
-
+        
         response = s3.upload_fileobj(
             io.BytesIO(image),
             os.getenv("BUCKET_NAME"),
@@ -117,12 +117,9 @@ def get_images():
 @app.route("/api/image/uploaded/", methods=["POST"])
 def uploadedImage():
     object_key = request.json["object_key"]
-    s3_resource = boto3.client("s3")
-    bucket = os.environ.get("BUCKET_NAME")
-    response = s3_resource.get_object(Bucket=bucket, Key=object_key)
-    ResponseMetadata = response["ResponseMetadata"]
-    url = f"https://{bucket}.s3.amazonaws.com/{object_key}"
-
+    url = request.json["url"]
+    socketId = request.json["socketId"]
+    
     conn = get_db_connection()
     cur = conn.cursor()
     
@@ -136,10 +133,9 @@ def uploadedImage():
     cur.close()
     conn.close()
 
-    socketId = ResponseMetadata.get("HTTPHeaders").get("x-amz-meta-socketid")
     socketio.emit(
         "image_uploaded",
-        {"object_key": object_key, "message": "File uploaded successfully"},
+        {"object_key": object_key, "url":url, "message": "File uploaded successfully"},
         to=socketId,
     )
 
